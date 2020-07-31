@@ -341,8 +341,8 @@ def parse_single_bso(request):
 
     try:
         bso = BSO(bso_data)
-    except ValueError:
-        request.errors.add("body", "bso", "Invalid BSO data")
+    except ValueError as e:
+        request.errors.add("body", "bso", "Invalid BSO data: %s" % (e))
         return
 
     consistent, msg = bso.validate()
