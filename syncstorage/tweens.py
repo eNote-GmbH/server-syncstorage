@@ -3,10 +3,13 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import json
+import logging
 
 from pyramid.httpexceptions import HTTPException
 
 from syncstorage.util import get_timestamp
+
+logger = logging.getLogger(__name__)
 
 try:
     from mozsvc.storage.mcclient import MemcachedClient
@@ -96,6 +99,10 @@ def convert_cornice_errors_to_respcodes(handler, registry):
                 # We have to return an integer, so use this as
                 # a generic "unexpected error" code.
                 code = WEAVE_ILLEGAL_METH
+
+            body["weave_code"] = code
+            request.metrics["error"] = body
+
             response.body = str(code)
             response.content_length = len(response.body)
 
