@@ -1,0 +1,6 @@
+flake8
+nose
+safety
+testfixtures
+unittest2
+webtest
