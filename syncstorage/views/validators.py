@@ -310,10 +310,18 @@ def parse_multiple_bsos(request):
             invalid_bsos[id] = "retry bso"
             continue
 
-        total_bytes += len(bso.get("payload", ""))
-        if total_bytes > BATCH_MAX_BYTES:
+        bso_bytes = len(bso.get("payload", ""))
+        if (total_bytes + bso_bytes) > BATCH_MAX_BYTES:
             invalid_bsos[id] = "retry bytes"
+            logmsg = ("Payload too large for BSO %s/%s/%s"
+                      " (%d of %d): %d Bytes (current: %d, max: %d)")
+            userid = request.matchdict["userid"]
+            collection = request.matchdict.get("collection")
+            logger.info(logmsg, userid, collection, id, count, len(bso_datas),
+                        bso_bytes, total_bytes, BATCH_MAX_BYTES)
             continue
+
+        total_bytes += bso_bytes
 
         valid_bsos[id] = bso
 
