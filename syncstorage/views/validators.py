@@ -6,7 +6,7 @@ import re
 import logging
 from base64 import b64decode
 
-from mozsvc.metrics import annotate_request
+from mozsvc.metrics import annotate_request, metrics_timer
 
 from syncstorage.bso import BSO, VALID_ID_REGEX
 from syncstorage.util import get_timestamp, json_loads
@@ -237,6 +237,7 @@ def extract_batch_state(request):
             raise json_error(400, "size-limit-exceeded")
 
 
+@metrics_timer("views.validators.parse_multiple_bsos")
 def parse_multiple_bsos(request):
     """Validator to parse a list of BSOs from the request body.
 
@@ -320,6 +321,7 @@ def parse_multiple_bsos(request):
     request.validated["invalid_bsos"] = invalid_bsos
 
 
+@metrics_timer("views.validators.parse_single_bso")
 def parse_single_bso(request):
     """Validator to parse a single BSO from the request body.
 
