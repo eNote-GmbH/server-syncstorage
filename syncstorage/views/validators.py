@@ -271,6 +271,7 @@ def parse_multiple_bsos(request):
 
     BATCH_MAX_COUNT = get_limit_config(request, "max_post_records")
     BATCH_MAX_BYTES = get_limit_config(request, "max_post_bytes")
+    PAYLOAD_MAX_BYTES = get_limit_config(request, "max_record_payload_bytes")
 
     valid_bsos = {}
     invalid_bsos = {}
@@ -295,7 +296,7 @@ def parse_multiple_bsos(request):
             request.errors.add("body", "bsos", "Input BSO has duplicate ID")
             return
 
-        consistent, msg = bso.validate()
+        consistent, msg = bso.validate(PAYLOAD_MAX_BYTES)
         if not consistent:
             invalid_bsos[id] = msg
             # Log status on how many invalid BSOs we get, and why.
@@ -355,7 +356,9 @@ def parse_single_bso(request):
         request.errors.add("body", "bso", "Invalid BSO data: %s" % (e))
         return
 
-    consistent, msg = bso.validate()
+    PAYLOAD_MAX_BYTES = get_limit_config(request, "max_record_payload_bytes")
+
+    consistent, msg = bso.validate(PAYLOAD_MAX_BYTES)
     if not consistent:
         request.errors.add("body", "bso", "Invalid BSO: " + msg)
         return

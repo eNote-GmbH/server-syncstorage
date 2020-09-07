@@ -57,7 +57,7 @@ class BSO(dict):
         fields = dict((k, v) for (k, v) in self.iteritems() if k != 'payload')
         return "BSO(%s)" % (json.dumps(fields, sort_keys=True),)
 
-    def validate(self):
+    def validate(self, max_record_payload_bytes=None):
         """Validates the values the BSO has."""
         # Check that there are no extraneous fields.
         for name in self:
@@ -121,7 +121,9 @@ class BSO(dict):
             if not isinstance(payload, basestring):
                 return False, 'payload not a string'
             self['payload_size'] = len(payload.encode("utf8"))
-            if self['payload_size'] > MAX_PAYLOAD_SIZE:
+            if max_record_payload_bytes is None:
+                max_record_payload_bytes = MAX_PAYLOAD_SIZE
+            if self['payload_size'] > max_record_payload_bytes:
                 return False, 'payload too large'
 
         return True, None
