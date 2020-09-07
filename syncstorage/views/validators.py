@@ -251,7 +251,7 @@ def parse_multiple_bsos(request):
     try:
         if content_type in ("application/json", "text/plain", None):
             bso_datas = json_loads(request.body)
-        elif content_type == "application/newlines":
+        elif content_type in ("application/newlines", "application/x-ndjson"):
             bso_datas = []
             if request.body:
                 for ln in request.body.split("\n"):
