@@ -1,4 +1,4 @@
-SYSTEMPYTHON = `which python2.7 python | head -n 1`
+SYSTEMPYTHON = $(shell which python2 python | head -n 1)
 VIRTUALENV = virtualenv --python=$(SYSTEMPYTHON)
 VENV = local
 VBIN = $(VENV)/bin
@@ -34,7 +34,7 @@ all: build
 $(VENV):
 	# The latest `pip` doesn't work with pypy 2.7 on some platforms.
 	# Pin to a working version; ref https://github.com/pypa/pip/issues/8653
-	$(VIRTUALENV) --no-pip ./local
+	$(VIRTUALENV) --no-pip $(VENV)
 	$(EASY_INSTALL) pip==20.1.1
 	$(INSTALL) --upgrade "setuptools>=0.7"
 
