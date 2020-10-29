@@ -4,22 +4,29 @@ cd $(dirname $0)
 case "$1" in
     server)
         _SETTINGS_FILE=${SYNC_SETTINGS_FILE:-"/app/example.ini"}
+        _GUNICORN_CONFIG_FILE=${SYNC_GUNICORN_CONFIG_FILE:-"/app/gunicorn.conf.py"}
 
         if [ ! -e $_SETTINGS_FILE ]; then
             echo "Could not find ini file: $_SETTINGS_FILE"
             exit 1
         fi
 
+        if [ ! -e $_GUNICORN_CONFIG_FILE ]; then
+            echo "Could not find config file: _GUNICORN_CONFIG_FILE"
+            exit 1
+        fi
+
         echo "Starting gunicorn with config: $_SETTINGS_FILE"
 
         exec gunicorn \
+            --config "$_GUNICORN_CONFIG_FILE" \
             --paste "$_SETTINGS_FILE" \
-            --bind ${HOST-127.0.0.1}:${PORT-8000}\
-            --worker-class ${WORKER_CLASS-sync} \
-            --timeout ${SYNC_TIMEOUT-600} \
-            --workers ${WEB_CONCURRENCY-1}\
-            --graceful-timeout ${SYNC_GRACEFUL_TIMEOUT-660}\
-            --max-requests ${SYNC_MAX_REQUESTS-5000}\
+            --bind "${HOST-127.0.0.1}:${PORT-8000}" \
+            --worker-class "${WORKER_CLASS-sync}" \
+            --timeout "${SYNC_TIMEOUT-600}" \
+            --workers "${WEB_CONCURRENCY-1}" \
+            --graceful-timeout "${SYNC_GRACEFUL_TIMEOUT-660}" \
+            --max-requests "${SYNC_MAX_REQUESTS-5000}" \
             --log-config "$_SETTINGS_FILE"
         ;;
 
