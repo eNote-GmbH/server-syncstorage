@@ -85,19 +85,32 @@ class SyncStorageAuthenticationPolicy(TokenServerAuthenticationPolicy):
                     # to explicitly dig it back out from `request.user`.
                     data["expired_uid"] = data["uid"]
                     userid = data["uid"] = "expired:%d" % (data["uid"],)
+                except ValueError, e:
+                    request.metrics["auth_error"] = {
+                        "msg": str(e)
+                    }
+                    raise e
             except tokenlib.errors.InvalidSignatureError, e:
                 # Token signature check failed, try the next secret.
                 continue
             except TypeError, e:
                 # Something went wrong when validating the contained data.
+                request.metrics["auth_error"] = {
+                    "msg": str(e)
+                }
                 raise ValueError(str(e))
             else:
                 # Token signature check succeeded, quit the loop.
                 break
         else:
             # The token failed to validate using any secret.
-            logger.warn("Authentication Failed: invalid hawk id")
-            raise ValueError("invalid Hawk id")
+            msg = "invalid Hawk id"
+            logger.warn("Authentication Failed: %s" % (msg,))
+            request.metrics["auth_error"] = {
+                "msg": msg,
+                "detail": "no valid secrets?"
+            }
+            raise ValueError(msg)
 
         # Let the app access all user data from the token.
         request.user.update(data)
@@ -106,8 +119,13 @@ class SyncStorageAuthenticationPolicy(TokenServerAuthenticationPolicy):
 
         # Sanity-check that we're on the right node.
         if data["node"] != node_name:
-            msg = "incorrect node for this token: %s"
-            raise ValueError(msg % (data["node"],))
+            msg = "incorrect node for this token: %s" % (data["node"],)
+            request.metrics["auth_error"] = {
+                "msg": msg,
+                "node_expected": node_name,
+                "node_required": data["node"]
+            }
+            raise ValueError(msg)
 
         # Calculate the matching request-signing secret.
         key = tokenlib.get_derived_secret(tokenid, secret=secret)
