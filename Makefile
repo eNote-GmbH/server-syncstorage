@@ -83,5 +83,5 @@ safetycheck: install-dev
 
 clean:
 	[ -z "$(EGG_INFO)" ] || rm -rf "$(EGG_INFO)"
-	[ -z "$(FILES_PYC)" ] || rm -f $(FILES_PYC)
+	find . -mindepth 1 -type f -iname "*.pyc" -delete
 	rm -rf $(VENV)
