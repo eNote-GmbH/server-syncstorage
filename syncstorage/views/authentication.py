@@ -7,7 +7,7 @@ import re
 import time
 
 import tokenlib
-import tokenlib.errors
+from tokenlib.errors import InvalidSignatureError, ExpiredTokenError
 from mozsvc.user import TokenServerAuthenticationPolicy
 from pyramid.interfaces import IAuthenticationPolicy
 from zope.interface import implements
@@ -76,7 +76,7 @@ class SyncStorageAuthenticationPolicy(TokenServerAuthenticationPolicy):
                 try:
                     data = self._parse_token(tm, tokenid, now)
                     userid = data["uid"]
-                except tokenlib.errors.ExpiredTokenError:
+                except ExpiredTokenError:
                     recently = now - self.expired_token_timeout
                     data = self._parse_token(tm, tokenid, recently)
                     # We replace the uid with a special string to ensure that
@@ -86,11 +86,12 @@ class SyncStorageAuthenticationPolicy(TokenServerAuthenticationPolicy):
                     data["expired_uid"] = data["uid"]
                     userid = data["uid"] = "expired:%d" % (data["uid"],)
                 except ValueError, e:
-                    request.metrics["auth_error"] = {
-                        "msg": str(e)
-                    }
+                    if not isinstance(e, InvalidSignatureError):
+                        request.metrics["auth_error"] = {
+                            "msg": str(e)
+                        }
                     raise e
-            except tokenlib.errors.InvalidSignatureError, e:
+            except InvalidSignatureError, e:
                 # Token signature check failed, try the next secret.
                 continue
             except TypeError, e:
