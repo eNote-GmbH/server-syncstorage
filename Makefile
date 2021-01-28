@@ -23,7 +23,7 @@ export MOZSVC_SQLURI = sqlite:///:memory:
 ARCHFLAGS = -Wno-error=unused-command-line-argument-hard-error-in-future
 CFLAGS = -Wno-error=write-strings
 
-INSTALL = ARCHFLAGS=$(ARCHFLAGS) CFLAGS=$(CFLAGS) $(PIP) install -U -i $(PYPI)
+INSTALL = ARCHFLAGS=$(ARCHFLAGS) CFLAGS=$(CFLAGS) $(PIP) --no-cache-dir install -U -i $(PYPI)
 
 .IGNORE: clean
 
