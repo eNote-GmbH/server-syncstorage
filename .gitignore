@@ -1,4 +1,5 @@
 .hg*
+.vscode/
 *.pyc
 *.mako.py
 *.egg-info
