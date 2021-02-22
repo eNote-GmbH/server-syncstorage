@@ -12,7 +12,7 @@ case "$1" in
         fi
 
         if [ ! -e $_GUNICORN_CONFIG_FILE ]; then
-            echo "Could not find config file: _GUNICORN_CONFIG_FILE"
+            echo "Could not find config file: $_GUNICORN_CONFIG_FILE"
             exit 1
         fi
 
