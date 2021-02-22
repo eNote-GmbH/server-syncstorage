@@ -23,7 +23,10 @@ RUN apk add --update build-base ca-certificates && \
 
 # Copy in the whole app after dependencies have been installed & cached
 COPY . /app
-RUN python setup.py develop
+RUN python setup.py develop && \
+    find /app -type d -exec chmod 755 {} \; && \
+    find /app -type f -exec chmod 644 {} \; && \
+    chmod 755 /app/docker-entrypoint.sh
 
 # De-escalate from root privileges with app user
 USER app
