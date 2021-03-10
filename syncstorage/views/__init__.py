@@ -433,6 +433,11 @@ def post_collection_batch(request):
         else:
             i = storage.valid_batch(user, collection, batch)
             if not i:
+                logger.error(
+                    'Invalid batch {0} (user:{1}, collection:{2})'.format(
+                        batch, user, collection
+                    )
+                )
                 raise InvalidBatch
 
         if bsos:
