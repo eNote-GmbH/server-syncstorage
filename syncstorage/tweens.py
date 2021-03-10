@@ -131,6 +131,7 @@ def convert_non_json_responses(handler, registry):
         try:
             response = handler(request)
         except HTTPException, response:
+            request.metrics["error_plain"] = str(response)
             if response.content_type != "application/json":
                 response.body = str(WEAVE_UNKNOWN_ERROR)
                 response.content_length = len(response.body)
@@ -139,6 +140,7 @@ def convert_non_json_responses(handler, registry):
         else:
             if response.status_code >= 400:
                 if response.content_type != "application/json":
+                    request.metrics["error_plain"] = response.body
                     response.body = str(WEAVE_UNKNOWN_ERROR)
                     response.content_length = len(response.body)
                     response.content_type = "application/json"
