@@ -143,6 +143,7 @@ class SQLStorage(SyncStorage):
             "force_consistent_sort_order":
                 dbkwds.get("force_consistent_sort_order", False),
         }
+        self._cache_size_collections = int(dbkwds.get("cache_size_collections")) or MAX_COLLECTIONS_CACHE_SIZE
 
         # There doesn't seem to be a reliable cross-database way to set the
         # initial value of an autoincrement column.
@@ -1046,10 +1047,10 @@ class SQLStorage(SyncStorage):
 
     def _cache_collection_id(self, collectionid, collection):
         """Cache the given collection (id, name) pair for fast lookup."""
-        if len(self._collections_by_name) > MAX_COLLECTIONS_CACHE_SIZE:
+        if len(self._collections_by_name) > self._cache_size_collections:
             msg = "More than %d collections have been created, "\
                   "refusing to cache them all"
-            logger.warn(msg % (MAX_COLLECTIONS_CACHE_SIZE,))
+            logger.warn(msg % (self._cache_size_collections,))
         else:
             self._collections_by_name[collection] = collectionid
             self._collections_by_id[collectionid] = collection
