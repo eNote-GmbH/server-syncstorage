@@ -143,6 +143,7 @@ class SQLStorage(SyncStorage):
             "force_consistent_sort_order":
                 dbkwds.get("force_consistent_sort_order", False),
         }
+        self._cache_enabled = dbkwds.get("cache_enabled", True)
         self._cache_size_collections = int(dbkwds.get("cache_size_collections") or MAX_COLLECTIONS_CACHE_SIZE)
 
         # There doesn't seem to be a reliable cross-database way to set the
@@ -976,7 +977,8 @@ class SQLStorage(SyncStorage):
         if self.standard_collections:
             assert collectionid >= FIRST_CUSTOM_COLLECTION_ID
 
-        self._cache_collection_id(collectionid, collection)
+        if self._cache_enabled:
+            self._cache_collection_id(collectionid, collection)
         return collectionid
 
     def _get_collection_name(self, session, collectionid):
@@ -995,7 +997,8 @@ class SQLStorage(SyncStorage):
         })
         if collection is None:
             raise CollectionNotFoundError
-        self._cache_collection_id(collectionid, collection)
+        if self._cache_enabled:
+            self._cache_collection_id(collectionid, collection)
         return collection
 
     def _load_collection_names(self, session, collection_ids):
@@ -1025,7 +1028,8 @@ class SQLStorage(SyncStorage):
             })
             for id, name in uncached_names:
                 names[id] = name
-                self._cache_collection_id(id, name)
+                if self._cache_enabled:
+                    self._cache_collection_id(id, name)
         # Check that we actually got a name for each specified id.
         for id in collection_ids:
             if id not in names:
