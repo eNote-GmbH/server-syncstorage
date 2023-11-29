@@ -144,7 +144,10 @@ class SQLStorage(SyncStorage):
                 dbkwds.get("force_consistent_sort_order", False),
         }
         self._cache_enabled = dbkwds.get("cache_enabled", True)
-        self._cache_size_collections = int(dbkwds.get("cache_size_collections") or MAX_COLLECTIONS_CACHE_SIZE)
+        self._cache_size_collections = (
+            int(dbkwds.get("cache_size_collections")
+                or MAX_COLLECTIONS_CACHE_SIZE)
+        )
 
         # There doesn't seem to be a reliable cross-database way to set the
         # initial value of an autoincrement column.
