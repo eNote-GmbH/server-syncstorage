@@ -13,6 +13,10 @@ PYPI = https://pypi.org/simple
 INSTALL_STAMP = $(VENV)/.install.stamp
 INSTALL_DEV_STAMP = $(VENV)/.install-dev.stamp
 
+DOCKER_IMAGE_NAMESPACE = mozilla
+DOCKER_IMAGE_VERSION ?= local
+DOCKER_IMAGE_TAG = $(DOCKER_IMAGE_NAMESPACE)/server-syncstorage:$(DOCKER_IMAGE_VERSION)
+
 EGG_INFO = $(shell ls -1d *.egg-info 2>/dev/null)
 FILES_PYC = $(shell find . -iname "*.pyc")
 
@@ -45,6 +49,9 @@ $(INSTALL_STAMP): $(VENV) requirements.txt
 	touch "$@"
 
 build: $(INSTALL_STAMP)
+
+build-docker:
+	docker build -t $(DOCKER_IMAGE_TAG) .
 
 $(INSTALL_DEV_STAMP): $(VENV) $(INSTALL_STAMP) setup.py requirements-dev.txt
 	$(INSTALL) --upgrade -r requirements-dev.txt
