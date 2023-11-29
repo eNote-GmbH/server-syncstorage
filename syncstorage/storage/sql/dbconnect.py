@@ -568,6 +568,11 @@ def report_backend_errors(func):
             err = traceback.format_exc()
             err = "Caught operational db error: %s\n%s" % (exc, err)
             logger.error(err)
+
+            # annotate the request so we can find it
+            metric_name = "syncstorage.storage.sql.db_op_error"
+            annotate_request(None, metric_name, 1)
+
             raise BackendError(str(exc))
     return report_backend_errors_wrapper
 

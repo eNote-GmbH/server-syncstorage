@@ -2124,7 +2124,7 @@ class TestStorageMemcached(TestStorage):
         res.sort()
         self.assertEquals(res, ['3', '4'])
 
-    def test_write_tabs_503(self):
+    def test_write_tabs_500(self):
         # This can't be run against a live server.
         if self.distant:
             raise unittest2.SkipTest
@@ -2154,11 +2154,11 @@ class TestStorageMemcached(TestStorage):
             bso2 = {'id': 'thing', 'payload': _PLD}
             bsos = [bso1, bso2]
 
-            # we get a 503 for both POST and PUT
+            # we get a 500 for both POST and PUT
             self.retry_post_json(self.root + '/storage/tabs', bsos,
-                                 status=503)
+                                 status=500)
             self.retry_put_json(self.root + '/storage/tabs/sure', bso1,
-                                status=503)
+                                status=500)
         finally:
             for key in self.config.registry:
                 if key.startswith("syncstorage:storage:"):
@@ -2196,13 +2196,13 @@ class TestStorageMemcached(TestStorage):
             bso2 = {'id': 'thing', 'payload': _PLD}
             bsos = [bso1, bso2]
 
-            # on batch, we get back a 503
+            # on batch, we get back a 409
             self.retry_post_json(self.root + '/storage/tabs', bsos,
-                                 status=503)
+                                 status=409)
 
-            # on single PUT, we get a 503
+            # on single PUT, we get a 409
             self.retry_put_json(self.root + '/storage/tabs/sure', bso1,
-                                status=503)
+                                status=409)
         finally:
             for key in self.config.registry:
                 if key.startswith("syncstorage:storage:"):

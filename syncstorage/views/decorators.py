@@ -9,7 +9,11 @@ from pyramid.httpexceptions import (HTTPNotFound,
                                     HTTPNotModified,
                                     HTTPServiceUnavailable,
                                     HTTPPreconditionFailed,
-                                    HTTPBadRequest)
+                                    HTTPBadRequest,
+                                    HTTPConflict,
+                                    HTTPInternalServerError)
+
+from mozsvc.exceptions import BackendError
 
 from syncstorage.storage import (ConflictError,
                                  NotFoundError,
@@ -53,7 +57,7 @@ def convert_storage_errors(viewfunc, request):
         #   * desktop bug: https://bugzilla.mozilla.org/show_bug.cgi?id=959034
         #   * android bug: https://bugzilla.mozilla.org/show_bug.cgi?id=959032
         headers = {"Retry-After": str(RETRY_AFTER)}
-        raise HTTPServiceUnavailable(headers=headers)
+        raise HTTPConflict(headers=headers)
     except NotFoundError:
         raise HTTPNotFound
     except InvalidOffsetError:
@@ -64,6 +68,9 @@ def convert_storage_errors(viewfunc, request):
         }])
     except InvalidBatch, e:
         raise HTTPBadRequest("Invalid batch: %s" % e)
+    except BackendError, e:
+        headers = {"Retry-After": str(RETRY_AFTER)}
+        raise HTTPInternalServerError(headers=headers)
 
 
 @make_decorator
