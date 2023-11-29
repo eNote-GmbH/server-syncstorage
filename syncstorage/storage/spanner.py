@@ -11,7 +11,7 @@ This module implements a Spanner layer for the SyncStorage backend API.
 import contextlib
 import datetime
 import functools
-import json
+import simplejson as json
 import logging
 import math
 import threading

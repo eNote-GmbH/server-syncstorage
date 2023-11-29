@@ -5,7 +5,7 @@
 """
 
 import re
-import json
+import simplejson as json
 import decimal
 
 FIELDS = set(('id', 'collection', 'sortindex', 'modified',
