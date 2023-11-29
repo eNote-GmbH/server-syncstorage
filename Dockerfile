@@ -6,6 +6,7 @@ RUN addgroup -g 10001 app && \
     adduser -D -u 10001 -G app -h /app -s /sbin/nologin app
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV REQUIRE_SPEEDUPS=1
 
 # run the server by default
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
