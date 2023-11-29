@@ -16,7 +16,9 @@ INSTALL_DEV_STAMP = $(VENV)/.install-dev.stamp
 EGG_INFO = $(shell ls -1d *.egg-info 2>/dev/null)
 FILES_PYC = $(shell find . -iname "*.pyc")
 
-export MOZSVC_SQLURI = sqlite:///:memory:
+
+MOZSVC_SQLURI ?= sqlite:///:memory:
+export MOZSVC_SQLURI
 
 # Hackety-hack around OSX system python bustage.
 # The need for this should go away with a future osx/xcode update.
@@ -71,17 +73,49 @@ wsgi-test: install-dev flake8
 		--worker-class mozsvc.gunicorn_worker.MozSvcGeventWorker & SERVER_PID=$$! ; \
 	sleep 2 ;\
 	$(PYTHON) $(TESTS)/functional/test_storage.py http://localhost:5000 ; \
-	kill $$SERVER_PID \
+	kill $$SERVER_PID; \
+	sleep 2 \
 	)
 
 test: flake8 nose-test wsgi-test
-
-safetycheck: install-dev
-	# Check for any dependencies with security issues.
-	# We ignore a known issue with gevent, because we can't update to it yet.
-	$(VBIN)/safety check --full-report --ignore 25837
 
 clean:
 	[ -z "$(EGG_INFO)" ] || rm -rf "$(EGG_INFO)"
 	find . -mindepth 1 -type f -iname "*.pyc" -delete
 	rm -rf $(VENV)
+
+memcached-start:
+	docker run --rm -d --name syncstorage-mc -p 11211:11211 \
+		--memory 128M \
+		memcached:1.6.22-alpine -m 64
+
+memcached-stop:
+	docker rm -vf syncstorage-mc
+
+mysql-start:
+	docker run --rm -d --name syncstorage-mysql \
+		--ulimit nofile=65536:65536 \
+		--memory 1G \
+		-e MYSQL_ROOT_PASSWORD=root \
+		-e MYSQL_DATABASE=sync_test \
+		-e MYSQL_USER=syncstorage \
+		-e MYSQL_PASSWORD=syncstorage \
+		mysql:5.7.44
+	printf "Waiting for MySQL to accept connections "; while [ "$$(docker logs syncstorage-mysql 2>&1 | grep -c -F 'mysqld: ready for connections')" -lt 2 ]; do sleep 1; printf "."; done; echo " done"
+	echo "Run tests using this DB: make test MOZSVC_SQLURI=pymysql://syncstorage:syncstorage@$$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' syncstorage-mysql):3306/sync_test"
+
+mysql-stop:
+	docker rm -vf syncstorage-mysql
+
+
+postgres-start:
+	docker run --rm -d --name syncstorage-postgres \
+		--memory 1G \
+		-e POSTGRES_PASSWORD=postgres \
+		-e POSTGRES_DB=sync_test \
+		postgres:16.1-bookworm
+	printf "Waiting for PostgreSQL to accept connections "; while [ "$$(docker logs syncstorage-postgres 2>&1 | grep -c -F 'database system is ready to accept connections')" -lt 2 ]; do sleep 1; printf "."; done; echo " done"
+	echo "Run tests using this DB: make test MOZSVC_SQLURI=postgresql://postgres:postgres@$$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' syncstorage-postgres):5432/sync_test"
+
+postgres-stop:
+	docker rm -vf syncstorage-postgres
