@@ -1,0 +1,126 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - enote
+    tags:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+env:
+  APP: sync-storage
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      APP_VERSION_TAG: ${{ steps.version.outputs.APP_VERSION_TAG }}
+    if: github.event_name != 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 200
+      - name: Set APP_VERSION_TAG
+        id: version
+        run: |
+          git tag --delete "$GITHUB_REF" || true
+          echo "APP_VERSION_TAG=$(git describe --always --tags HEAD)" >> $GITHUB_OUTPUT
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    if: github.ref == 'refs/heads/enote'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: docker-metadata
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ needs.prepare.outputs.APP_VERSION_TAG }}
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.docker-metadata.outputs.tags }}
+          labels: ${{ steps.docker-metadata.outputs.labels }}
+
+  docker-release:
+    name: Docker Retag (Release)
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    container: gcr.io/go-containerregistry/crane:debug
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Retag and Push Images
+        run: |
+          crane auth login -u $USER -p $PASS $REGISTRY
+          crane tag ${REGISTRY}/${IMAGE_NAME}:${FROM_TAG} ${TAG}
+        env:
+          APP_VERSION_TAG: ${{ needs.prepare.outputs.APP_VERSION_TAG }}
+          USER: ${{ github.actor }}
+          PASS: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY: ${{ env.registry }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          FROM_TAG: ${{ needs.prepare.outputs.APP_VERSION_TAG }}
+          TAG: ${{ github.ref_name }}
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [prepare, docker-build]
+    if: github.ref == 'refs/heads/enote'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/eNote-GmbH/helm-charts/actions/workflows/update-app-image.yml/dispatches \
+            -f "ref=master" \
+            -f "inputs[app]=$APP" \
+            -f "inputs[tag]=$APP_VERSION_TAG" \
+            -f "inputs[environment]=staging"
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          APP_VERSION_TAG: ${{ needs.prepare.outputs.APP_VERSION_TAG }}
+
+  deploy-prod:
+    name: Deploy to Prod
+    needs: [prepare, docker-release]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/eNote-GmbH/helm-charts/actions/workflows/update-app-image.yml/dispatches \
+            -f "ref=master" \
+            -f "inputs[app]=$APP" \
+            -f "inputs[tag]=$APP_VERSION_TAG" \
+            -f "inputs[environment]=prod"
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          APP_VERSION_TAG: ${{ needs.prepare.outputs.APP_VERSION_TAG }}
+
+
