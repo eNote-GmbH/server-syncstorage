@@ -8,6 +8,10 @@ This module overrides some queries from queries_generic.py with code
 tailored to MySQL.
 """
 
+INIT_COLLECTION = "INSERT IGNORE INTO user_collections "\
+                  "(userid, collection, last_modified) "\
+                  "VALUES (:userid, :collectionid, :modified)"
+
 # MySQL's non-standard DELETE ORDER BY LIMIT is incredibly useful here.
 
 PURGE_SOME_EXPIRED_ITEMS = """
